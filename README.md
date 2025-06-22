@@ -26,11 +26,17 @@ pip install opencv-python face_recognition numpy Pillow
 
 face_recognition_gui/
 │
+
 ├── database.db               # SQLite база данных
+
 ├── main_gui.py               # Основной графический интерфейс
+
 ├── webcam_core.py            # Логика распознавания
+
 ├── utils.py                  # Вспомогательные функции
+
 └── face_db_manager.py        # Работа с базой данных
+
 
 
 
