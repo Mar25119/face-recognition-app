@@ -51,11 +51,14 @@ face_recognition_gui/
 Установка и запуск:
 
 1. Клонируй репозиторий
-2. Установи зависимости:
+2. 
+3. Установи зависимости:
    pip install opencv-python face_recognition numpy Pillow
+   
 3.Создай базу данных:
 python
  from face_db_manager import init_db
  init_db()
+ 
 4.Запусти приложение:
 python main_gui.py
