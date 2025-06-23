@@ -1,26 +1,26 @@
 # main_gui.py
+
 import tkinter as tk
-from tkinter import simpledialog, messagebox
+from tkinter import simpledialog
 from PIL import Image, ImageTk
 import cv2
 import numpy as np
-from io import BytesIO
 from webcam_core import recognize_faces, get_known_data
-from face_db_manager import get_all_faces, delete_face, update_face_name
-
+from utils import add_new_face
 
 class FaceRecognitionApp:
     def __init__(self, window):
         self.window = window
         self.window.title("Распознавание лиц")
 
+        # Инициализация данных
         self.known_encodings, self.known_names = get_known_data()
 
         # Панель с видео
         self.panel = tk.Label(window)
         self.panel.pack(padx=10, pady=10)
 
-        # Кнопки
+        # Кнопки управления
         self.btn_frame = tk.Frame(window)
         self.btn_frame.pack(pady=10)
 
@@ -33,9 +33,9 @@ class FaceRecognitionApp:
         self.quit_button = tk.Button(self.btn_frame, text="Выход", command=self.quit_app)
         self.quit_button.pack(side="left", padx=5)
 
-        # Захват видео
+        # Видеозахват
         self.video_capture = cv2.VideoCapture(0)
-        self.delay = 15
+        self.delay = 15  # мс между кадрами
         self.current_frame = None
         self.process_this_frame = True
 
@@ -50,6 +50,7 @@ class FaceRecognitionApp:
                 locations, names = recognize_faces(frame, self.known_encodings, self.known_names)
                 self.draw_boxes(frame, locations, names)
 
+            # Конвертация в RGB и отображение
             img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(img)
             img = ImageTk.PhotoImage(img)
@@ -70,7 +71,6 @@ class FaceRecognitionApp:
         if self.current_frame is not None:
             name = simpledialog.askstring("Имя", "Введите имя:")
             if name:
-                from utils import add_new_face
                 add_new_face(self.current_frame, name)
                 self.known_encodings, self.known_names = get_known_data()
 
@@ -91,42 +91,52 @@ class ViewWindow:
         self.frame = tk.Frame(self.top)
         self.frame.pack(padx=10, pady=10)
 
-        self.rows = get_all_faces()
+        from face_db_manager import FaceDBManager
+        db = FaceDBManager()
+        rows = db.get_all_faces()
+
         self.labels = []
 
-        for row in self.rows:
+        for row in rows:
             face_id, name, photo_blob, _ = row
-            img = Image.open(BytesIO(photo_blob))
-            img.thumbnail((100, 100))
-            photo = ImageTk.PhotoImage(img)
+            try:
+                img = Image.open(BytesIO(photo_blob))
+                img.thumbnail((100, 100))
+                photo = ImageTk.PhotoImage(img)
 
-            panel = tk.Label(self.frame, image=photo)
-            panel.image = photo
-            panel.grid(row=len(self.labels), column=0)
+                panel = tk.Label(self.frame, image=photo)
+                panel.image = photo
+                panel.grid(row=len(self.labels), column=0)
 
-            entry = tk.Entry(self.frame)
-            entry.insert(0, name)
-            entry.grid(row=len(self.labels), column=1)
+                entry = tk.Entry(self.frame)
+                entry.insert(0, name)
+                entry.grid(row=len(self.labels), column=1)
 
-            save_btn = tk.Button(self.frame, text="Сохранить", command=lambda eid=face_id, e=entry: self.save_name(eid, e))
-            save_btn.grid(row=len(self.labels), column=2)
+                save_btn = tk.Button(self.frame, text="Сохранить",
+                                     command=lambda eid=face_id, e=entry: self.save_name(eid, e))
+                save_btn.grid(row=len(self.labels), column=2)
 
-            del_btn = tk.Button(self.frame, text="Удалить", command=lambda eid=face_id: self.delete_face(eid))
-            del_btn.grid(row=len(self.labels), column=3)
+                del_btn = tk.Button(self.frame, text="Удалить", command=lambda eid=face_id: self.delete_face(eid))
+                del_btn.grid(row=len(self.labels), column=3)
 
-            self.labels.append((panel, entry, save_btn, del_btn))
+                self.labels.append((panel, entry, save_btn, del_btn))
+
+            except Exception as e:
+                print(f"Ошибка при загрузке фото: {e}")
 
     def save_name(self, face_id, entry):
         new_name = entry.get()
-        update_face_name(face_id, new_name)
-        self.app.known_encodings, self.app.known_names = get_known_data()
-
-    def delete_face(self, face_id):
-        delete_face(face_id)
+        from face_db_manager import FaceDBManager
+        db = FaceDBManager()
+        db.update_face_name(face_id, new_name)
         self.app.known_encodings, self.app.known_names = get_known_data()
         self.top.destroy()
+        self.__init__(self.top.master, self.app)
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = FaceRecognitionApp(root)
-    root.mainloop()
+    def delete_face(self, face_id):
+        from face_db_manager import FaceDBManager
+        db = FaceDBManager()
+        db.delete_face(face_id)
+        self.app.known_encodings, self.app.known_names = get_known_data()
+        self.top.destroy()
+        self.__init__(self.top.master, self.app)
