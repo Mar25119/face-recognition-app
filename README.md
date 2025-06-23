@@ -55,7 +55,7 @@ face_recognition_gui/
    pip install opencv-python face_recognition numpy Pillow
 3.Создай базу данных:
 python
->>> from face_db_manager import init_db
->>> init_db()
+ from face_db_manager import init_db
+ init_db()
 4.Запусти приложение:
 python main_gui.py
