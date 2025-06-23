@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from webcam_core import recognize_faces, get_known_data
 from utils import add_new_face
+from io import BytesIO
 
 class FaceRecognitionApp:
     def __init__(self, window):
@@ -140,3 +141,8 @@ class ViewWindow:
         self.app.known_encodings, self.app.known_names = get_known_data()
         self.top.destroy()
         self.__init__(self.top.master, self.app)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = FaceRecognitionApp(root)
+    root.mainloop()
